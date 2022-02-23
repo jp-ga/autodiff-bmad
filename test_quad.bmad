@@ -1,0 +1,19 @@
+parameter[lattice] = test_quad
+
+beginning[beta_a] = 10
+beginning[beta_b] = 10
+
+beginning[p0c] = 4.0e7
+parameter[particle] = electron
+parameter[geometry] = open
+
+q1: quad, L = 0.1, K1 = 10.0, fringe_at = no_end, spin_fringe_on = F, num_steps = 1
+
+lat: line = (q1)
+
+use, lat
+
+!pvec1 = [2e-3,3e-3,-3e-3,-1e-3,2e-3,-2e-3]
+!tensor([2.1962397193025498e-03, 8.8418342648533704e-04, -3.2534419732692201e-03,
+!        -4.1008717415728603e-03, 1.9993946642253299e-03, -2.0000000000000000e-03],
+!       dtype=torch.float64)
