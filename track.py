@@ -27,16 +27,16 @@ def make_track_a_drift(lib):
         z = p_in.z
         pz = p_in.pz
         
-        P = 1 + pz  # Particle's total momentum over p0
-        Px = px / P  # Particle's 'x' momentum over p0
-        Py = py / P  # Particle's 'y' momentum over p0
+        P = 1 + pz            # Particle's total momentum over p0
+        Px = px / P           # Particle's 'x' momentum over p0
+        Py = py / P           # Particle's 'y' momentum over p0
         Pxy2 = Px**2 + Py**2  # Particle's transverse mometum^2 over p0^2
-        Pl = sqrt(1-Pxy2)  # Particle's longitudinal momentum over p0
+        Pl = sqrt(1-Pxy2)     # Particle's longitudinal momentum over p0
         
         x = x + L * Px / Pl
         y = y + L * Py / Pl
         
-        beta = P * p0c / sqrt( (P*p0c)**2 + mc2**2)  # hypot
+        beta = P * p0c / sqrt( (P*p0c)**2 + mc2**2)
         beta_ref = p0c / sqrt( p0c**2 + mc2**2)
         z = z + L * ( beta/beta_ref - 1.0/Pl )
         s = s + L
@@ -53,11 +53,10 @@ def make_track_a_quadrupole(lib):
     cos = lib.cos
     sinh = lib.sinh
     cosh = lib.cosh
-    ones = lib.ones
     
     def quad_mat2_calc(k1, length, rel_p):
-        """Returns 2x2 transfer matrix elements aij and the coefficients to calculate 
-        the change in z position.
+        """Returns 2x2 transfer matrix elements aij and the coefficients
+        to calculate the change in z position.
         Input: 
             k1_ref -- Quad strength: k1 > 0 ==> defocus
             length -- Quad length
@@ -65,7 +64,7 @@ def make_track_a_quadrupole(lib):
         Output:
             a11, a12, a21, a22 -- transfer matrix elements
             c1, c2, c3 -- second order derivatives of z such that 
-                        z = c1 * x_0^2 + c2 * x_0 * px_0 + c3* px_0^2
+                           z = c1 * x_0^2 + c2 * x_0 * px_0 + c3* px_0^2
         """ 
         eps = 2.220446049250313e-16  # machine epsilon to double precission
         
@@ -88,7 +87,7 @@ def make_track_a_quadrupole(lib):
     
     
     def low_energy_z_correction(pz, p0c, mass, ds):
-        """Corrects the change in z-coordinate due to speed < c_light. 
+        """Corrects the change in z-coordinate due to speed < c_light.
         Input:
             p0c -- reference particle momentum in eV
             mass -- particle mass in eV
@@ -100,13 +99,17 @@ def make_track_a_quadrupole(lib):
         e_tot = sqrt(p0c**2+mass**2)
         
         evaluation = mass * (beta0*pz)**2
-        dz = ( (ds*pz*(1-3*(pz*beta0**2)/2+pz**2*beta0**2*(2*beta0**2-(mass/e_tot)**2/2))*(mass/e_tot)**2)*(evaluation<3e-7*e_tot)
-              + (ds*(beta-beta0)/beta0)*(evaluation>=3e-7*e_tot) )
+        dz = ( (ds*pz*(1-3*(pz*beta0**2)/2+pz**2*beta0**2*(2*beta0**2-(mass/e_tot)**2/2))*(mass/e_tot)**2)
+              * (evaluation<3e-7*e_tot)
+              + (ds*(beta-beta0)/beta0)
+              * (evaluation>=3e-7*e_tot) )
         return dz
     
     
     def track_a_quadrupole(p_in, quad):
-        """Tracks the incoming Particle p_in though quad element and returns the outgoing particle."""
+        """Tracks the incoming Particle p_in though quad element and 
+        returns the outgoing particle.
+        """
         l = quad.L
         k1 = quad.K1
         n_step = quad.NUM_STEPS  # number of divisions
@@ -154,23 +157,28 @@ def make_track_a_quadrupole(lib):
 
 
 def track_a_lattice(p_in,lattice):
-    """Tracks an incomming Particle p_in through lattice and returns the outgoing particle."""
+    """Tracks an incomming Particle p_in through lattice and returns a 
+    list of outgoing particles after each element.
+    """
     lib = sys.modules[type(p_in.x).__module__]
     tracking_function_dict = {
         "Drift" : make_track_a_drift(lib),
         "Quadrupole" : make_track_a_quadrupole(lib)
     }
-    p_out = p_in
-    all_p = [p_out]
-    for ele in lattice:
+    n = len(lattice)
+    all_p = [None] * (n+1)
+    all_p[0] = p_in
+    for i in range(n):
+        ele = lattice[i]
         track_f = tracking_function_dict[type(ele).__name__]
-        p_out = track_f(p_out,ele)
-        all_p.append(p_out)
+        all_p[i+1] = track_f(all_p[i],ele)
     return all_p
 
 
 def stub_element(ele, n):
-    """Divides ele into 'n' equal length elements and returns a list of these short elements."""
+    """Divides ele into 'n' equal length elements and returns
+    a list of these short elements.
+    """
     short_L = ele.L / n
     short_ele = ele._replace(L=short_L)
     lattice = [short_ele] * n
