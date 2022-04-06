@@ -72,7 +72,7 @@ def make_track_a_quadrupole(lib):
         sk_l = sqrt_k * length
         
         cx = cos(sk_l) * (k1<=0) + cosh(sk_l) * (k1>0)
-        sx = (sin(sk_l)/(sqrt_k))*(k1<0) + (sinh(sk_l)/(sqrt_k))*(k1>=0)
+        sx = (sin(sk_l)/(sqrt_k))*(k1<=0) + (sinh(sk_l)/(sqrt_k))*(k1>0)
         
         a11 = cx
         a12 = sx / rel_p
@@ -103,6 +103,7 @@ def make_track_a_quadrupole(lib):
               * (evaluation<3e-7*e_tot)
               + (ds*(beta-beta0)/beta0)
               * (evaluation>=3e-7*e_tot) )
+        
         return dz
     
     
@@ -153,6 +154,7 @@ def make_track_a_quadrupole(lib):
         
         return Particle(x, px, y, py, z, pz, s, p0c, mc2)
     
+    
     return track_a_quadrupole
 
 
@@ -168,10 +170,12 @@ def track_a_lattice(p_in,lattice):
     n = len(lattice)
     all_p = [None] * (n+1)
     all_p[0] = p_in
+    
     for i in range(n):
         ele = lattice[i]
         track_f = tracking_function_dict[type(ele).__name__]
         all_p[i+1] = track_f(all_p[i],ele)
+        
     return all_p
 
 
@@ -182,4 +186,16 @@ def stub_element(ele, n):
     short_L = ele.L / n
     short_ele = ele._replace(L=short_L)
     lattice = [short_ele] * n
+    
     return lattice
+
+def stub_lattice(lattice, n):
+    """Divides every element in the lattice into 'n' elements
+    each and returns divided lattice. 
+    """
+    stubbed_lattice = []
+    
+    for ele in lattice:
+        stubbed_lattice.extend(stub_element(ele, n))
+        
+    return stubbed_lattice
