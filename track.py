@@ -1,5 +1,6 @@
 from collections import namedtuple
 import sys
+import math
 
 # Named tuples for elements and particles
 Drift = namedtuple('Drift', 'L')
@@ -48,11 +49,25 @@ def make_track_a_drift(lib):
 def make_track_a_quadrupole(lib):
     """Makes track_a_quadrupole given the library lib."""
     sqrt = lib.sqrt
-    absolute = lib.abs
     sin = lib.sin
     cos = lib.cos
     sinh = lib.sinh
     cosh = lib.cosh
+    sinc = lib.sinc
+    pi = math.pi
+    absolute = lib.abs
+    
+    def sinhc(x):
+        """Pade approximant for sinh(x)/x"""
+        a = ( 1 + 53272705/360869676*x**2
+             + 38518909/7217393520*x**4
+             + 269197963/3940696861920*x**6
+             + 4585922449/15605159573203200*x**8 )
+        b = ( 1 - 2290747/120289892*x**2
+             + 1281433/7217393520*x**4
+             - 560401/562956694560*x**6
+             + 1029037/346781323848960*x**8 )
+        return a/b
     
     def quad_mat2_calc(k1, length, rel_p):
         """Returns 2x2 transfer matrix elements aij and the coefficients
@@ -65,15 +80,18 @@ def make_track_a_quadrupole(lib):
             a11, a12, a21, a22 -- transfer matrix elements
             c1, c2, c3 -- second order derivatives of z such that 
                            z = c1 * x_0^2 + c2 * x_0 * px_0 + c3* px_0^2
+        Note: accumulated error due to machine epsilon. REVISIT
         """ 
+        
         eps = 2.220446049250313e-16  # machine epsilon to double precission
         
         sqrt_k = sqrt(absolute(k1)+eps)
         sk_l = sqrt_k * length
         
-        cx = cos(sk_l) * (k1<=0) + cosh(sk_l) * (k1>0)
-        sx = (sin(sk_l)/(sqrt_k))*(k1<=0) + (sinh(sk_l)/(sqrt_k))*(k1>0)
-        
+        cx = cos(sk_l) * (k1<=0) + cosh(sk_l) * (k1>0) 
+        #sx = (sin(sk_l)/(sqrt_k))*(k1<=0) + (sinh(sk_l)/(sqrt_k))*(k1>0)
+        sx = sinc(sk_l/pi)*length*(k1<=0) + sinhc(sk_l)*length*(k1>0)
+          
         a11 = cx
         a12 = sx / rel_p
         a21 = k1 * sx * rel_p
