@@ -4,7 +4,8 @@ import math
 
 # Named tuples for elements and particles
 Drift = namedtuple('Drift', 'L')
-Quadrupole = namedtuple('Quadrupole', 'L K1 NUM_STEPS')
+Quadrupole = namedtuple('Quadrupole', 'L K1 NUM_STEPS X_OFFSET Y_OFFSET',
+                        defaults=(None, None, 1, 0, 0))
 Particle = namedtuple('Particle', 'x px y py z pz s p0c mc2')
 
 def make_track_a_drift(lib):
@@ -58,7 +59,7 @@ def make_track_a_quadrupole(lib):
     absolute = lib.abs
     
     def sinhc(x):
-        """Pade approximant for sinh(x)/x"""
+        """Pade approximant for sinh(x)/x to order 8,8."""
         a = ( 1 + 53272705/360869676*x**2
              + 38518909/7217393520*x**4
              + 269197963/3940696861920*x**6
@@ -80,7 +81,7 @@ def make_track_a_quadrupole(lib):
             a11, a12, a21, a22 -- transfer matrix elements
             c1, c2, c3 -- second order derivatives of z such that 
                            z = c1 * x_0^2 + c2 * x_0 * px_0 + c3* px_0^2
-        Note: accumulated error due to machine epsilon. REVISIT
+        NOTE: accumulated error due to machine epsilon. REVISIT
         """ 
         
         eps = 2.220446049250313e-16  # machine epsilon to double precission
@@ -89,8 +90,8 @@ def make_track_a_quadrupole(lib):
         sk_l = sqrt_k * length
         
         cx = cos(sk_l) * (k1<=0) + cosh(sk_l) * (k1>0) 
-        #sx = (sin(sk_l)/(sqrt_k))*(k1<=0) + (sinh(sk_l)/(sqrt_k))*(k1>0)
-        sx = sinc(sk_l/pi)*length*(k1<=0) + sinhc(sk_l)*length*(k1>0)
+        sx = (sin(sk_l)/(sqrt_k))*(k1<=0) + (sinh(sk_l)/(sqrt_k))*(k1>0)
+        #sx = sinc(sk_l/pi)*length*(k1<=0) + sinhc(sk_l)*length*(k1>0)
           
         a11 = cx
         a12 = sx / rel_p
@@ -124,6 +125,29 @@ def make_track_a_quadrupole(lib):
         
         return dz
     
+    def offset_particle_entrance(x_offset, y_offset, x_lab, y_lab, 
+                                 px_lab, py_lab):
+        """transform from the laboratory coordinates to the
+        entrance element coordinates.
+        NOTE: transverse only.
+        """
+        x_ele = x_lab - x_offset
+        y_ele = y_lab - y_offset
+        px_ele = px_lab
+        py_ele = py_lab
+        return x_ele, y_ele, px_ele, py_ele
+    
+    def offset_particle_exit(x_offset, y_offset, x_ele, y_ele,
+                             px_ele, py_ele):
+        """Transforms from the exit element reference frame to the
+        laboratory reference frame.
+        NOTE: transverse only.
+        """
+        x_lab = x_ele + x_offset
+        y_lab = y_ele + y_offset
+        px_lab = px_ele
+        py_lab = py_ele
+        return x_lab, y_lab, px_lab, py_lab
     
     def track_a_quadrupole(p_in, quad):
         """Tracks the incoming Particle p_in though quad element and 
@@ -134,7 +158,10 @@ def make_track_a_quadrupole(lib):
         n_step = quad.NUM_STEPS  # number of divisions
         step_len = l/n_step  # length of division
         
-        b1=k1*l
+        x_off = quad.X_OFFSET
+        y_off = quad.Y_OFFSET
+        
+        b1 = k1*l
         
         s = p_in.s
         p0c = p_in.p0c
@@ -146,6 +173,10 @@ def make_track_a_quadrupole(lib):
         py = p_in.py
         z = p_in.z
         pz = p_in.pz
+        
+        # --- TRACKING --- :
+        
+        x, y, px, py = offset_particle_entrance(x_off, y_off, x, y, px, py)
         
         for i in range(n_step):
             rel_p = 1 + pz  # Particle's relative momentum (P/P0)
@@ -169,6 +200,8 @@ def make_track_a_quadrupole(lib):
             z = z + low_energy_z_correction(pz, p0c, mc2, step_len)
         
         s = s + l
+        
+        x, y, px, py = offset_particle_exit(x_off, y_off, x, y, px, py)
         
         return Particle(x, px, y, py, z, pz, s, p0c, mc2)
     

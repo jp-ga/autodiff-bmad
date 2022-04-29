@@ -7,7 +7,7 @@ beginning[p0c] = 4.0e7
 parameter[particle] = electron
 parameter[geometry] = open
 
-q1: quad, L = 0.1, K1 = 0.0
+q1: quad, L = 0.1, K1 = 10.0
 
 lat: line = (q1)
 
