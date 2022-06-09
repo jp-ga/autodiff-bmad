@@ -58,17 +58,17 @@ def make_track_a_quadrupole(lib):
     pi = math.pi
     absolute = lib.abs
     
-    def sinhc(x):
-        """Pade approximant for sinh(x)/x to order 8,8."""
-        a = ( 1 + 53272705/360869676*x**2
-             + 38518909/7217393520*x**4
-             + 269197963/3940696861920*x**6
-             + 4585922449/15605159573203200*x**8 )
-        b = ( 1 - 2290747/120289892*x**2
-             + 1281433/7217393520*x**4
-             - 560401/562956694560*x**6
-             + 1029037/346781323848960*x**8 )
-        return a/b
+    #def sinhc(x):
+    #    """Pade approximant for sinh(x)/x to order 8,8."""
+    #    a = ( 1 + 53272705/360869676*x**2
+    #         + 38518909/7217393520*x**4
+    #         + 269197963/3940696861920*x**6
+    #         + 4585922449/15605159573203200*x**8 )
+    #    b = ( 1 - 2290747/120289892*x**2
+    #         + 1281433/7217393520*x**4
+    #         - 560401/562956694560*x**6
+    #         + 1029037/346781323848960*x**8 )
+    #    return a/b
     
     def quad_mat2_calc(k1, length, rel_p):
         """Returns 2x2 transfer matrix elements aij and the coefficients
@@ -83,7 +83,6 @@ def make_track_a_quadrupole(lib):
                            z = c1 * x_0^2 + c2 * x_0 * px_0 + c3* px_0^2
         NOTE: accumulated error due to machine epsilon. REVISIT
         """ 
-        
         eps = 2.220446049250313e-16  # machine epsilon to double precission
         
         sqrt_k = sqrt(absolute(k1)+eps)
